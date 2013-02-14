@@ -51,6 +51,16 @@ class DJBase {
     }
 
     protected static function getConnection() {
+
+        if (self::$db) {
+            try {
+                $sql = 'SHOW COLUMNS FROM jobs';
+                $stmt = self::$db->prepare($sql);
+                $stmt->execute($params);
+            } catch(Exception $e) {
+                self::$db = null;
+            }
+        }
         if (self::$db === null) {
             if (!self::$dsn) {
                 throw new DJException("Please tell DJJob how to connect to your database by calling DJJob::configure(\$dsn, [\$options = array()]) or re-using an existing PDO connection by calling DJJob::setConnection(\$pdoObject). If you're using MySQL you'll need to pass the db credentials as separate 'mysql_user' and 'mysql_pass' options. This is a PDO limitation, see [http://stackoverflow.com/questions/237367/why-is-php-pdo-dsn-a-different-format-for-mysql-versus-postgresql] for an explanation.");
@@ -306,7 +316,7 @@ class DJJob extends DJBase {
         );
         $this->log("[JOB] failure in job::{$this->job_id}", self::ERROR);
         $this->releaseLock();
-        
+
         if ($handler && ($this->getAttempts() == $this->max_attempts) && method_exists($handler, '_onDjjobRetryError')) {
           $handler->_onDjjobRetryError($error);
         }
